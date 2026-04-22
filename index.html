@@ -1,0 +1,472 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFJ Capex Project Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&amp;family=DM+Sans:wght@300;400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060d1c;--bg2:#0b1628;--bg3:#0e1c34;
+  --border:rgba(255,255,255,0.07);
+  --teal:#00c4b4;--amber:#f0a832;--green:#00d97e;--red:#ff4455;--blue:#4d90ff;
+  --text:#d8eaf8;--text2:#6b84a3;--text3:#2e4360;
+  --r:12px;
+  --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--text3);border-radius:3px}
+
+/* HEADER */
+#hdr{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,13,28,.96);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
+  padding:.85rem 1.75rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+}
+.hl{display:flex;align-items:center;gap:.9rem}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,var(--teal),var(--blue));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 20px rgba(0,196,180,.3);flex-shrink:0}
+.htitle{font-family:var(--fh);font-size:1rem;font-weight:800;letter-spacing:.02em}
+.hsub{font-size:.72rem;color:var(--text2);font-family:var(--fm);margin-top:1px}
+.hr{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end}
+#ts{font-size:.7rem;color:var(--text3);font-family:var(--fm);white-space:nowrap}
+.btn{display:flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:8px;font-family:var(--fb);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;border:none}
+.btn-o{background:rgba(0,196,180,.08);border:1px solid rgba(0,196,180,.22)!important;color:var(--teal)}
+.btn-o:hover{background:rgba(0,196,180,.18)}
+.btn-p{background:linear-gradient(135deg,var(--teal),var(--blue));color:#fff;box-shadow:0 4px 16px rgba(0,196,180,.25)}
+.btn-p:hover{opacity:.9}
+.btn-p:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
+
+/* FILE PATH BANNER */
+#path-banner{
+  background:rgba(77,144,255,0.06);
+  border-bottom:1px solid rgba(77,144,255,0.12);
+  padding:.6rem 1.75rem;
+  display:flex;align-items:center;gap:.75rem;
+  flex-wrap:wrap;
+}
+.pb-label{
+  font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--blue);font-family:var(--fm);font-weight:600;
+  white-space:nowrap;flex-shrink:0;
+}
+.pb-icon{font-size:.85rem;flex-shrink:0}
+#path-display{
+  flex:1;min-width:200px;
+  font-family:var(--fm);font-size:.72rem;color:var(--text2);
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:6px;padding:.3rem .65rem;
+  cursor:pointer;transition:all .15s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  position:relative;
+}
+#path-display:hover{border-color:rgba(77,144,255,.35);color:var(--text)}
+#path-display.editing{
+  white-space:normal;word-break:break-all;
+  border-color:var(--blue);
+  background:rgba(77,144,255,.07);
+  color:var(--text);
+  cursor:text;
+}
+#path-input{
+  display:none;flex:1;min-width:200px;
+  font-family:var(--fm);font-size:.72rem;color:var(--text);
+  background:rgba(77,144,255,.07);
+  border:1px solid var(--blue);
+  border-radius:6px;padding:.3rem .65rem;
+  outline:none;
+}
+.pb-hint{font-size:.65rem;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.pb-edit-btn{
+  font-size:.65rem;color:var(--blue);background:rgba(77,144,255,.1);
+  border:1px solid rgba(77,144,255,.2);border-radius:5px;
+  padding:.2rem .55rem;cursor:pointer;font-family:var(--fb);
+  white-space:nowrap;flex-shrink:0;transition:all .15s;
+}
+.pb-edit-btn:hover{background:rgba(77,144,255,.2)}
+.pb-copy-btn{
+  font-size:.65rem;color:var(--text3);background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:5px;
+  padding:.2rem .55rem;cursor:pointer;font-family:var(--fb);
+  white-space:nowrap;flex-shrink:0;transition:all .15s;
+}
+.pb-copy-btn:hover{color:var(--text);background:rgba(255,255,255,.08)}
+
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1rem}
+.mbg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid rgba(0,196,180,.2);border-radius:16px;padding:2rem;width:100%;max-width:460px;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:popIn .2s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal h2{font-family:var(--fh);font-size:1.1rem;font-weight:700;margin-bottom:.35rem}
+.mdesc{color:var(--text2);font-size:.82rem;line-height:1.6;margin-bottom:1.25rem}
+.steps{display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.4rem}
+.step{display:flex;align-items:flex-start;gap:.7rem;padding:.65rem .85rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px}
+.sn{width:20px;height:20px;border-radius:50%;background:rgba(0,196,180,.12);border:1px solid rgba(0,196,180,.25);color:var(--teal);font-family:var(--fm);font-size:.68rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.st{font-size:.79rem;line-height:1.5;color:var(--text)}
+.st strong{color:var(--teal)}
+.dz{border:2px dashed rgba(0,196,180,.3);border-radius:12px;padding:1.75rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3);position:relative}
+.dz:hover,.dz.drag{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,196,180,.07)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-ico{font-size:1.8rem;margin-bottom:.5rem}
+.dz h3{font-family:var(--fh);font-size:.9rem;font-weight:700;margin-bottom:.25rem}
+.dz p{font-size:.75rem;color:var(--text2)}
+.mact{display:flex;gap:.6rem;margin-top:1rem}
+.btn-cx{flex:1;padding:.55rem 1rem;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border)!important;color:var(--text2);font-size:.82rem;cursor:pointer;transition:all .15s;font-family:var(--fb)}
+.btn-cx:hover{background:rgba(255,255,255,.08)}
+#mst{margin-top:.75rem;font-size:.78rem;color:var(--text2);text-align:center;min-height:1.2em}
+#mst.err{color:var(--red)}#mst.ok{color:var(--green)}
+
+/* MAIN */
+#main{padding:1.5rem 1.75rem 3rem;max-width:1520px;margin:0 auto}
+.col-legend{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap}
+.col-legend span{font-size:.67rem;font-family:var(--fm);text-transform:uppercase;letter-spacing:.1em;padding:.18rem .55rem;border-radius:4px;border:1px solid var(--border);color:var(--text3)}
+.col-legend .cy1{color:var(--teal);border-color:rgba(0,196,180,.22)}
+.col-legend .ctgt{color:var(--amber);border-color:rgba(240,168,50,.22)}
+.section{margin-bottom:2rem;animation:fadeUp .35s ease both}
+.section:nth-child(2){animation-delay:.04s}.section:nth-child(3){animation-delay:.08s}
+.section:nth-child(4){animation-delay:.12s}.section:nth-child(5){animation-delay:.16s}
+.section:nth-child(6){animation-delay:.2s}.section:nth-child(7){animation-delay:.24s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.sec-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.9rem}
+.sec-num{font-family:var(--fm);font-size:.65rem;font-weight:600;color:var(--teal);background:rgba(0,196,180,.1);border:1px solid rgba(0,196,180,.2);border-radius:4px;padding:.15rem .45rem}
+.sec-title{font-family:var(--fh);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--text3)}
+.sec-line{flex:1;height:1px;background:var(--border)}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
+.hero-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem 1.35rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.hero-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
+.hero-card.ct::after{background:linear-gradient(90deg,var(--teal),transparent)}
+.hero-card.cb::after{background:linear-gradient(90deg,var(--blue),transparent)}
+.hero-card.ca::after{background:linear-gradient(90deg,var(--amber),transparent)}
+.hero-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.hc-g{position:absolute;top:1rem;right:1rem;font-size:1.7rem;opacity:.07}
+.hc-l{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-weight:500;margin-bottom:.55rem;line-height:1.4}
+.hc-v{font-family:var(--fm);font-size:1.85rem;font-weight:600;line-height:1;margin-bottom:.35rem}
+.hc-p{font-size:.68rem;color:var(--text3);font-family:var(--fm)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.85rem}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--text3);border-radius:var(--r);padding:1.1rem 1.2rem;transition:box-shadow .2s}
+.kpi-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
+.kpi-card.sg{border-left-color:var(--green)}.kpi-card.sb{border-left-color:var(--red)}.kpi-card.sw{border-left-color:var(--amber)}
+.kc-l{font-size:.76rem;color:var(--text2);font-weight:500;margin-bottom:.55rem;line-height:1.4}
+.kc-y{font-family:var(--fm);font-size:1.5rem;font-weight:600;line-height:1;margin-bottom:.65rem}
+.kc-y.neg{color:var(--red)}
+.kc-ps{display:flex;gap:.45rem;margin-bottom:.65rem}
+.kc-p{flex:1;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:6px;padding:.4rem .5rem}
+.kc-pl{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-family:var(--fm);margin-bottom:.18rem}
+.kc-pv{font-family:var(--fm);font-size:.8rem;font-weight:500;color:var(--text2)}
+.kc-tr{display:flex;align-items:flex-end;gap:3px;height:24px;margin-bottom:.55rem}
+.kc-b{flex:1;border-radius:3px 3px 0 0;min-height:3px;background:rgba(0,196,180,.35)}
+.kc-b:nth-child(2){background:rgba(0,196,180,.58)}.kc-b:nth-child(3){background:var(--teal)}
+.kc-b.nb{background:rgba(255,68,85,.45)!important}
+.kc-bl{display:flex;gap:3px;margin-bottom:.55rem}
+.kc-bl span{flex:1;text-align:center;font-size:.55rem;color:var(--text3);font-family:var(--fm)}
+.kc-ft{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.kc-tl{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:.15rem}
+.kc-tv{font-family:var(--fm);font-size:.8rem;color:var(--amber);font-weight:500}
+.chip{font-size:.58rem;font-weight:700;padding:.15rem .45rem;border-radius:4px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.cg{background:rgba(0,217,126,.1);color:var(--green);border:1px solid rgba(0,217,126,.2)}
+.cr{background:rgba(255,68,85,.1);color:var(--red);border:1px solid rgba(255,68,85,.2)}
+.cw{background:rgba(240,168,50,.1);color:var(--amber);border:1px solid rgba(240,168,50,.2)}
+.full-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.full-table th{font-family:var(--fh);font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:.6rem .85rem;text-align:right;border-bottom:1px solid var(--border);background:var(--bg3)}
+.full-table th:first-child{text-align:left}
+.full-table td{padding:.55rem .85rem;border-bottom:1px solid var(--border);text-align:right;font-family:var(--fm);color:var(--text2);font-size:.76rem}
+.full-table td:first-child{text-align:left;color:var(--text);font-family:var(--fb);font-size:.8rem;font-weight:500}
+.full-table tr:hover td{background:rgba(255,255,255,.02)}
+.full-table .gr td{background:rgba(0,196,180,.04);color:var(--teal);font-family:var(--fh);font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700;border-top:1px solid rgba(0,196,180,.12);padding-top:.85rem}
+.full-table td.neg{color:var(--red)}.full-table td.tgt{color:var(--amber)}
+
+/* toast */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--bg2);border:1px solid rgba(0,196,180,.3);border-radius:10px;padding:.65rem 1.1rem;font-size:.78rem;color:var(--teal);font-family:var(--fm);box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="hl">
+    <div class="logo">📊</div>
+    <div>
+      <div class="htitle">SFJ Capex Project Dashboard</div>
+      <div class="hsub" id="hsub">Deshboard_FE_v0 · Singapore Capital Project</div>
+    </div>
+  </div>
+  <div class="hr">
+    <span id="ts">Last updated: 22 Apr 2026, 08:50 am</span>
+    <button class="btn btn-o" id="open-btn" fdprocessedid="9qqd3p">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>
+      Update Data
+    </button>
+    <button class="btn btn-p" id="dl-btn" fdprocessedid="12rq0b">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Download Updated HTML
+    </button>
+  </div>
+</header>
+
+<!-- FILE PATH BANNER -->
+<div id="path-banner">
+  <span class="pb-icon">📁</span>
+  <span class="pb-label">OneDrive / SharePoint path</span>
+  <div id="path-display" title="Click Edit to update the file path">OneDrive › Superfrz Group Pte Ltd › 01_SF_2025 › 01_Capex_Updates › PMO_Template › Dashboard_Gemini › capex-dashboard.html</div>
+  <input id="path-input" type="text" placeholder="Paste your OneDrive or SharePoint path here…" spellcheck="false">
+  <button class="pb-edit-btn" id="edit-path-btn" fdprocessedid="jh8prj">✎ Edit</button>
+  <button class="pb-copy-btn" id="copy-path-btn" fdprocessedid="7yams">⎘ Copy</button>
+  <span class="pb-hint">← Replace this file after each update</span>
+</div>
+
+<!-- UPDATE MODAL -->
+<div class="mbg" id="mbg">
+  <div class="modal">
+    <h2>Update Dashboard Data</h2>
+    <p class="mdesc">Upload a revised Excel file. Then download the new self-contained HTML and replace the file at your OneDrive path.</p>
+    <div class="steps">
+      <div class="step"><div class="sn">1</div><div class="st">Drop your updated <strong>.xlsx</strong> file below — dashboard refreshes live</div></div>
+      <div class="step"><div class="sn">2</div><div class="st">Click <strong>Download Updated HTML</strong> in the header</div></div>
+      <div class="step"><div class="sn">3</div><div class="st">Replace the file at your <strong>OneDrive / SharePoint path</strong> — Monday.com embed updates automatically</div></div>
+    </div>
+    <div class="dz" id="dz">
+      <input type="file" id="fi" accept=".xlsx,.xls">
+      <div class="dz-ico">📂</div>
+      <h3>Drop file here or click to browse</h3>
+      <p>.xlsx / .xls · First sheet only</p>
+    </div>
+    <div id="mst" class="ok">✓ Updated from "Deshboard_FE_v0" — now Download Updated HTML</div>
+    <div class="mact">
+      <button class="btn-cx" id="close-btn" fdprocessedid="l8bxrd">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<main id="main"><div class="col-legend"><span class="cy1">Work Package</span><span class="">Category</span><span class="">Sub-Category</span><span class="">Description</span><span class="">Budget Amount (SGD)</span><span class="">Actual Amount (SGD)</span><span class="">Variance (SGD)</span><span class="">% Spent</span><span class="">Status</span><span class="">Priority</span><span class="">Owner</span><span class="">Start Date</span><span class="">End Date</span><span class="">Phase</span><span class="">Payment Terms</span><span class="ctgt">Notes</span></div><div class="section"><div class="sec-head"><span class="sec-num">🏗</span><span class="sec-title">WP-001</span><div class="sec-line"></div></div><div class="hero-grid"><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-001</div><div class="hc-v">Preliminaries</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-002</div><div class="hc-v">Consultancy Fee</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B1</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-003-B2</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-003-B3</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B4</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-003-B5</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-003-B6</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B7</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-003-B8</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-003-B9</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B10</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-003-B11</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-003-B12</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B13</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-003-B14</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-003-B15</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-003-B16</div><div class="hc-v">Builder Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-004</div><div class="hc-v">ACMV Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-005</div><div class="hc-v">BMS Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-006</div><div class="hc-v">ESCS Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-007</div><div class="hc-v">Electrical Works</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-008</div><div class="hc-v">Fire Protection Works</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-009</div><div class="hc-v">Plumbing &amp; Sanitary</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">WP-010</div><div class="hc-v">Cold Room Installation</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">WP-011</div><div class="hc-v">Oxy Reduct System</div><div class="hc-p">Work Package</div></div><div class="hero-card ca"><div class="hc-g">📊</div><div class="hc-l">WP-012</div><div class="hc-v">Vertical Transportation</div><div class="hc-p">Work Package</div></div><div class="hero-card ct"><div class="hc-g">📊</div><div class="hc-l">OPT-001</div><div class="hc-v">Optional</div><div class="hc-p">Work Package</div></div><div class="hero-card cb"><div class="hc-g">📊</div><div class="hc-l">PS-001</div><div class="hc-v">Provisional Sum</div><div class="hc-p">Work Package</div></div></div></div><div class="section"><div class="sec-head"><span class="sec-num">✦</span><span class="sec-title">Full Data Summary</span><div class="sec-line"></div></div><table class="full-table"><thead><tr><th>KPI</th><th>Work Package</th><th>Category</th><th>Sub-Category</th><th>Description</th><th>Budget Amount (SGD)</th><th>Actual Amount (SGD)</th><th>Variance (SGD)</th><th>% Spent</th><th>Status</th><th>Priority</th><th>Owner</th><th>Start Date</th><th>End Date</th><th>Phase</th><th>Payment Terms</th><th style="color:var(--amber)">Notes</th></tr></thead><tbody><tr class="gr"><td colspan="17">— WP-001 —</td></tr><tr><td>WP-001</td><td class="">Preliminaries</td><td class="">General</td><td class="">Preliminaries</td><td class="">Site management, safety, equipment, CAR/ER insurance, Performance Bond</td><td class="">7.92M</td><td class="">0</td><td class="">7.92M</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">Project Manager</td><td class="">46,174</td><td class="">47,299</td><td class="">12</td><td class="">30</td><td class="tgt">Includes DfS, RI, RE/RTO</td></tr><tr><td>WP-002</td><td class="">Consultancy Fee</td><td class="">Professional Services</td><td class="">Design Consultants</td><td class="">Architect, C&amp;S, M&amp;E, Fire Safety Engineer, Green Mark Consultant</td><td class="">6.44M</td><td class="">0</td><td class="">6.44M</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">Design Lead</td><td class="">46,174</td><td class="">46,582</td><td class="">12</td><td class="">Milestone-based</td><td class="tgt">QP fees included in base offer</td></tr><tr><td>WP-003-B1</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Basement Works</td><td class="">ERSS, Excavation, RC Works, Waterproofing</td><td class="">15.96M</td><td class="">0</td><td class="">15.96M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Construction Mgr</td><td class="">46,423</td><td class="">46,687</td><td class="">1</td><td class="">Progress claims</td><td class="tgt">Includes pile cap &amp; basement slab</td></tr><tr><td>WP-003-B2</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Piling Works</td><td class="">RC Driven Piling</td><td class="">4.20M</td><td class="">0</td><td class="">4.20M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Piling Subcon</td><td class="">46,365</td><td class="">46,482</td><td class="">1</td><td class="">Progress claims</td><td class="tgt">Grid B6-B1 then A5-A1</td></tr><tr><td>WP-003-B3</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Sub-Structure</td><td class="">Excavation, RC Works, Anti-termite</td><td class="">4.27M</td><td class="">0</td><td class="">4.27M</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">Construction Mgr</td><td class="">46,423</td><td class="">46,526</td><td class="">1</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B4</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Super-Structure</td><td class="">1</td><td class="">15.83M</td><td class="">0</td><td class="">15.83M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Construction Mgr</td><td class="">46,613</td><td class="">46,857</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Includes precast staircase</td></tr><tr><td>WP-003-B5</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Post Tensioning</td><td class="">1</td><td class="">18.89M</td><td class="">0</td><td class="">18.89M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">PT Specialist</td><td class="">46,613</td><td class="">46,842</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B6</td><td class="">Builder Works</td><td class="">Structural</td><td class="">Steel &amp; Metal Works</td><td class="">Metal roof, Maintenance platform, Canopy</td><td class="">3.66M</td><td class="">0</td><td class="">3.66M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Steel Subcon</td><td class="">46,757</td><td class="">46,857</td><td class="">1</td><td class="">Progress claims</td><td class="tgt">ASRS roof trellis included</td></tr><tr><td>WP-003-B7</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Waterproofing</td><td class="">Substructure, Superstructure, Roof</td><td class="">842,200</td><td class="">0</td><td class="">842,200</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Waterproofing Subcon</td><td class="">46,526</td><td class="">46,944</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B8</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Wall &amp; Facade</td><td class="">ALC Panels, Aluminium Cladding</td><td class="">4.27M</td><td class="">0</td><td class="">4.27M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Facade Subcon</td><td class="">46,684</td><td class="">46,892</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Fire-rated ALC panels</td></tr><tr><td>WP-003-B9</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Wall Finishes</td><td class="">Skim coat, Plastering, Tiling</td><td class="">1.48M</td><td class="">0</td><td class="">1.48M</td><td class="">0</td><td class="">Not Started</td><td class="">Low</td><td class="">Finishing Subcon</td><td class="">46,684</td><td class="">46,892</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B10</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Floor Finishes</td><td class="">2</td><td class="">2.88M</td><td class="">0</td><td class="">2.88M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Finishing Subcon</td><td class="">46,684</td><td class="">46,857</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">FM2 for L1M &amp; L3 ASRS</td></tr><tr><td>WP-003-B11</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Ceiling Finishes</td><td class="">Calcium silicate board, Light coves</td><td class="">185,100</td><td class="">0</td><td class="">185,100</td><td class="">0</td><td class="">Not Started</td><td class="">Low</td><td class="">Finishing Subcon</td><td class="">46,684</td><td class="">46,892</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B12</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Painting Works</td><td class="">Emulsion, Weathershield, Epoxy</td><td class="">772,100</td><td class="">0</td><td class="">772,100</td><td class="">0</td><td class="">Not Started</td><td class="">Low</td><td class="">Painting Subcon</td><td class="">46,803</td><td class="">46,890</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B13</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Doors &amp; Windows</td><td class="">Fire-rated roller shutters, Aluminium glazing</td><td class="">1.88M</td><td class="">0</td><td class="">1.88M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Door/Glazing Subcon</td><td class="">46,803</td><td class="">46,890</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">4hr fire-rated doors</td></tr><tr><td>WP-003-B14</td><td class="">Builder Works</td><td class="">Architectural</td><td class="">Sundries</td><td class="">Toilet cubicles, Signages, Bollards, Dock levellers</td><td class="">807,900</td><td class="">0</td><td class="">807,900</td><td class="">0</td><td class="">Not Started</td><td class="">Low</td><td class="">General Subcon</td><td class="">46,684</td><td class="">46,892</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">13-ton dock levellers</td></tr><tr><td>WP-003-B15</td><td class="">Builder Works</td><td class="">External</td><td class="">External Works</td><td class="">Fencing, Turfing, Road, Drainage</td><td class="">1.82M</td><td class="">0</td><td class="">1.82M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Civil Subcon</td><td class="">46,700</td><td class="">46,962</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-003-B16</td><td class="">Builder Works</td><td class="">M&amp;E Support</td><td class="">ESCS Builder Works</td><td class="">ALC, Wall finishes, Fire-rated shutters for smoke shaft</td><td class="">677,600</td><td class="">0</td><td class="">677,600</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Builder Subcon</td><td class="">46,684</td><td class="">46,892</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">—</td></tr><tr><td>WP-004</td><td class="">ACMV Works</td><td class="">M&amp;E</td><td class="">Air-Conditioning &amp; Ventilation</td><td class="">Split AC, VRF systems, MV fans, Jet fans, IAQ test</td><td class="">3.18M</td><td class="">0</td><td class="">3.18M</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">M&amp;E Subcon</td><td class="">46,712</td><td class="">46,952</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">LG or equivalent; 18-mth DLP</td></tr><tr><td>WP-005</td><td class="">BMS Works</td><td class="">M&amp;E</td><td class="">Building Management System</td><td class="">DDC controllers, BACnet integration, ACMV/Electrical interface</td><td class="">768,000</td><td class="">0</td><td class="">768,000</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">BMS Specialist</td><td class="">46,712</td><td class="">46,952</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Excludes fuel/ammonia systems</td></tr><tr><td>WP-006</td><td class="">ESCS Works</td><td class="">M&amp;E</td><td class="">Smoke Control/Purging</td><td class="">MV fans, beam detectors, master control panel</td><td class="">4.20M</td><td class="">0</td><td class="">4.20M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Fire M&amp;E Subcon</td><td class="">46,712</td><td class="">46,952</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Basement, L2, L8 warehouse</td></tr><tr><td>WP-007</td><td class="">Electrical Works</td><td class="">M&amp;E</td><td class="">Electrical Distribution</td><td class="">HT switchgear, Transformers, Generator, LV distribution, Lighting, CCTV, EVC</td><td class="">9.96M</td><td class="">0</td><td class="">9.96M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Electrical Subcon</td><td class="">46,556</td><td class="">46,912</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">ABB/Schneider/Siemens; LEW coordination</td></tr><tr><td>WP-008</td><td class="">Fire Protection Works</td><td class="">M&amp;E</td><td class="">Fire Systems</td><td class="">Wet sprinkler (ESFR), Hose reel, Wet/Dry riser, Fire alarm, Extinguishers</td><td class="">3.93M</td><td class="">0</td><td class="">3.93M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Fire Subcon</td><td class="">46,556</td><td class="">46,952</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">NFPA 13/FM Global; excludes in-rack sprinklers</td></tr><tr><td>WP-009</td><td class="">Plumbing &amp; Sanitary</td><td class="">M&amp;E</td><td class="">Water &amp; Sanitary Systems</td><td class="">Domestic/NEWater tanks &amp; pumps, Sanitary pipework, Grease trap, Rainwater harvesting</td><td class="">2.78M</td><td class="">0</td><td class="">2.78M</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Plumbing Subcon</td><td class="">46,556</td><td class="">46,936</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Johnson Suisse sanitary ware; PUB liaison</td></tr><tr><td>WP-010</td><td class="">Cold Room Installation</td><td class="">Specialist</td><td class="">Cold Room Fit-Out</td><td class="">PIR insulation panels, Cold room doors, Floor insulation/heaters, Dock shelters, Lighting</td><td class="">7.23M</td><td class="">0</td><td class="">7.23M</td><td class="">0</td><td class="">Not Started</td><td class="">Critical</td><td class="">Cold Room Subcon</td><td class="">46,776</td><td class="">47,009</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">Excludes refrigeration equipment; N50 air tightness test</td></tr><tr><td>WP-011</td><td class="">Oxy Reduct System</td><td class="">Specialist</td><td class="">Fire Suppression</td><td class="">Oxy reduct system for ASRS</td><td class="">0</td><td class="">0</td><td class="">0</td><td class="">0</td><td class="">On Hold</td><td class="">TBD</td><td class="">Fire Consultant</td><td class="">TBD</td><td class="">TBD</td><td class="">2</td><td class="">TBD</td><td class="tgt">To be advised; excluded from base offer</td></tr><tr><td>WP-012</td><td class="">Vertical Transportation</td><td class="">Specialist</td><td class="">Lifts &amp; Escalators</td><td class="">15</td><td class="">912,800</td><td class="">0</td><td class="">912,800</td><td class="">0</td><td class="">Not Started</td><td class="">High</td><td class="">Lift Subcon</td><td class="">46,814</td><td class="">46,948</td><td class="">12</td><td class="">Progress claims</td><td class="tgt">SS 550 compliant; SCDF fire lift requirements</td></tr><tr><td>OPT-001</td><td class="">Optional</td><td class="">General</td><td class="">DLP Extension</td><td class="">1,824</td><td class="">648,800</td><td class="">0</td><td class="">648,800</td><td class="">0</td><td class="">Not Started</td><td class="">Low</td><td class="">Project Manager</td><td class="">TBD</td><td class="">TBD</td><td class="">12</td><td class="">Optional add-on</td><td class="tgt">—</td></tr><tr><td>PS-001</td><td class="">Provisional Sum</td><td class="">Authority Fees</td><td class="">Submission Fees</td><td class="">Authority submission fees (BCA, SCDF, PUB, etc.)</td><td class="">395,000</td><td class="">0</td><td class="">395,000</td><td class="">0</td><td class="">Not Started</td><td class="">Medium</td><td class="">Admin</td><td class="">TBD</td><td class="">TBD</td><td class="">12</td><td class="">Provisional</td><td class="tgt">Actual cost to be confirmed</td></tr></tbody></table></div></main>
+<div id="toast"></div>
+
+<script>
+// ─── EMBEDDED DEFAULT DATA ─────────────────────────────────
+const DEFAULT = {"sheet":"Deshboard_FE_v0","filename":"Deshboard_FE_v0.xlsx","ts":"22 Apr 2026, 08:50 am","rows":[["Item ID","Work Package","Category","Sub-Category","Description","Budget Amount (SGD)","Actual Amount (SGD)","Variance (SGD)","% Spent","Status","Priority","Owner","Start Date","End Date","Phase","Payment Terms","Notes"],["WP-001","Preliminaries","General","Preliminaries","Site management, safety, equipment, CAR/ER insurance, Performance Bond",7918200,0,7918200,0,"Not Started","High","Project Manager",46174,47299,"Phase 1 & 2","30% upfront + SOP Act","Includes DfS, RI, RE/RTO"],["WP-002","Consultancy Fee","Professional Services","Design Consultants","Architect, C&S, M&E, Fire Safety Engineer, Green Mark Consultant",6442300,0,6442300,0,"Not Started","High","Design Lead",46174,46582,"Phase 1 & 2","Milestone-based","QP fees included in base offer"],["WP-003-B1","Builder Works","Structural","Basement Works","ERSS, Excavation, RC Works, Waterproofing",15957700,0,15957700,0,"Not Started","Critical","Construction Mgr",46423,46687,"Phase 1","Progress claims","Includes pile cap & basement slab"],["WP-003-B2","Builder Works","Structural","Piling Works","RC Driven Piling",4195700,0,4195700,0,"Not Started","Critical","Piling Subcon",46365,46482,"Phase 1","Progress claims","Grid B6-B1 then A5-A1"],["WP-003-B3","Builder Works","Structural","Sub-Structure","Excavation, RC Works, Anti-termite",4266400,0,4266400,0,"Not Started","High","Construction Mgr",46423,46526,"Phase 1","Progress claims",null],["WP-003-B4","Builder Works","Structural","Super-Structure","RC Works L1M-L8, Flat Roof",15828300,0,15828300,0,"Not Started","Critical","Construction Mgr",46613,46857,"Phase 1 & 2","Progress claims","Includes precast staircase"],["WP-003-B5","Builder Works","Structural","Post Tensioning","PT Works L1-L8, Roof",18886200,0,18886200,0,"Not Started","Critical","PT Specialist",46613,46842,"Phase 1 & 2","Progress claims",null],["WP-003-B6","Builder Works","Structural","Steel & Metal Works","Metal roof, Maintenance platform, Canopy",3663500,0,3663500,0,"Not Started","Medium","Steel Subcon",46757,46857,"Phase 1","Progress claims","ASRS roof trellis included"],["WP-003-B7","Builder Works","Architectural","Waterproofing","Substructure, Superstructure, Roof",842200,0,842200,0,"Not Started","Medium","Waterproofing Subcon",46526,46944,"Phase 1 & 2","Progress claims",null],["WP-003-B8","Builder Works","Architectural","Wall & Facade","ALC Panels, Aluminium Cladding",4272800,0,4272800,0,"Not Started","Medium","Facade Subcon",46684,46892,"Phase 1 & 2","Progress claims","Fire-rated ALC panels"],["WP-003-B9","Builder Works","Architectural","Wall Finishes","Skim coat, Plastering, Tiling",1483700,0,1483700,0,"Not Started","Low","Finishing Subcon",46684,46892,"Phase 1 & 2","Progress claims",null],["WP-003-B10","Builder Works","Architectural","Floor Finishes","Power trowel, Hardener, Tiles, FM2 for ASRS",2883000,0,2883000,0,"Not Started","Medium","Finishing Subcon",46684,46857,"Phase 1 & 2","Progress claims","FM2 for L1M & L3 ASRS"],["WP-003-B11","Builder Works","Architectural","Ceiling Finishes","Calcium silicate board, Light coves",185100,0,185100,0,"Not Started","Low","Finishing Subcon",46684,46892,"Phase 1 & 2","Progress claims",null],["WP-003-B12","Builder Works","Architectural","Painting Works","Emulsion, Weathershield, Epoxy",772100,0,772100,0,"Not Started","Low","Painting Subcon",46803,46890,"Phase 1 & 2","Progress claims",null],["WP-003-B13","Builder Works","Architectural","Doors & Windows","Fire-rated roller shutters, Aluminium glazing",1875000,0,1875000,0,"Not Started","Medium","Door/Glazing Subcon",46803,46890,"Phase 1 & 2","Progress claims","4hr fire-rated doors"],["WP-003-B14","Builder Works","Architectural","Sundries","Toilet cubicles, Signages, Bollards, Dock levellers",807900,0,807900,0,"Not Started","Low","General Subcon",46684,46892,"Phase 1 & 2","Progress claims","13-ton dock levellers"],["WP-003-B15","Builder Works","External","External Works","Fencing, Turfing, Road, Drainage",1824600,0,1824600,0,"Not Started","Medium","Civil Subcon",46700,46962,"Phase 1 & 2","Progress claims",null],["WP-003-B16","Builder Works","M&E Support","ESCS Builder Works","ALC, Wall finishes, Fire-rated shutters for smoke shaft",677600,0,677600,0,"Not Started","Medium","Builder Subcon",46684,46892,"Phase 1 & 2","Progress claims",null],["WP-004","ACMV Works","M&E","Air-Conditioning & Ventilation","Split AC, VRF systems, MV fans, Jet fans, IAQ test",3176000,0,3176000,0,"Not Started","High","M&E Subcon",46712,46952,"Phase 1 & 2","Progress claims","LG or equivalent; 18-mth DLP"],["WP-005","BMS Works","M&E","Building Management System","DDC controllers, BACnet integration, ACMV/Electrical interface",768000,0,768000,0,"Not Started","High","BMS Specialist",46712,46952,"Phase 1 & 2","Progress claims","Excludes fuel/ammonia systems"],["WP-006","ESCS Works","M&E","Smoke Control/Purging","MV fans, beam detectors, master control panel",4200300,0,4200300,0,"Not Started","Critical","Fire M&E Subcon",46712,46952,"Phase 1 & 2","Progress claims","Basement, L2, L8 warehouse"],["WP-007","Electrical Works","M&E","Electrical Distribution","HT switchgear, Transformers, Generator, LV distribution, Lighting, CCTV, EVC",9958800,0,9958800,0,"Not Started","Critical","Electrical Subcon",46556,46912,"Phase 1 & 2","Progress claims","ABB/Schneider/Siemens; LEW coordination"],["WP-008","Fire Protection Works","M&E","Fire Systems","Wet sprinkler (ESFR), Hose reel, Wet/Dry riser, Fire alarm, Extinguishers",3925800,0,3925800,0,"Not Started","Critical","Fire Subcon",46556,46952,"Phase 1 & 2","Progress claims","NFPA 13/FM Global; excludes in-rack sprinklers"],["WP-009","Plumbing & Sanitary","M&E","Water & Sanitary Systems","Domestic/NEWater tanks & pumps, Sanitary pipework, Grease trap, Rainwater harvesting",2776300,0,2776300,0,"Not Started","Medium","Plumbing Subcon",46556,46936,"Phase 1 & 2","Progress claims","Johnson Suisse sanitary ware; PUB liaison"],["WP-010","Cold Room Installation","Specialist","Cold Room Fit-Out","PIR insulation panels, Cold room doors, Floor insulation/heaters, Dock shelters, Lighting",7233500,0,7233500,0,"Not Started","Critical","Cold Room Subcon",46776,47009,"Phase 1 & 2","Progress claims","Excludes refrigeration equipment; N50 air tightness test"],["WP-011","Oxy Reduct System","Specialist","Fire Suppression","Oxy reduct system for ASRS",0,0,0,0,"On Hold","TBD","Fire Consultant","TBD","TBD","Phase 2","TBD","To be advised; excluded from base offer"],["WP-012","Vertical Transportation","Specialist","Lifts & Escalators","1x 5-ton cargo lift, 1x passenger lift, 4x evacuation lifts",912800,0,912800,0,"Not Started","High","Lift Subcon",46814,46948,"Phase 1 & 2","Progress claims","SS 550 compliant; SCDF fire lift requirements"],["OPT-001","Optional","General","DLP Extension","Extend Defects Liability Period from 18 to 24 months",648800,0,648800,0,"Not Started","Low","Project Manager","TBD","TBD","Phase 1 & 2","Optional add-on",null],["PS-001","Provisional Sum","Authority Fees","Submission Fees","Authority submission fees (BCA, SCDF, PUB, etc.)",395000,0,395000,0,"Not Started","Medium","Admin","TBD","TBD","Phase 1 & 2","Provisional","Actual cost to be confirmed"]],"filePath":"OneDrive › Superfrz Group Pte Ltd › 01_SF_2025 › 01_Capex_Updates › PMO_Template › Dashboard_Gemini › capex-dashboard.html"};
+
+// ─── STATE ────────────────────────────────────────────────
+let CURRENT = JSON.parse(JSON.stringify(DEFAULT));
+
+// ─── FORMATTERS ───────────────────────────────────────────
+const isCur  = l=>/\(sgd|sgd\/|sgd\)/i.test(l||'');
+const isPct  = l=>/(margin|ratio|occupancy|escalation|\birr\b|rate|yield)/i.test(l||'');
+const isMulti= l=>/moic|multiple/i.test(l||'');
+const isPay  = l=>/payback/i.test(l||'');
+
+function fv(v,l){
+  l=l||'';
+  if(v===null||v===undefined)return'—';
+  if(typeof v==='string'){
+    const s=v.trim();
+    if(!s||s==='—'||s==='\u2014')return'—';
+    if(s.endsWith('%'))return s;
+    const n=parseFloat(s.replace(/[^0-9.\-]/g,''));
+    if(!isNaN(n))v=n;else return s;
+  }
+  if(isNaN(v))return'—';
+  if(isCur(l)){const sg=v<0?'–':'',a=Math.abs(v);if(a>=1e9)return`${sg}S$${(a/1e9).toFixed(2)}B`;if(a>=1e6)return`${sg}S$${(a/1e6).toFixed(2)}M`;return`${sg}S$${Math.round(a).toLocaleString()}`;}
+  if(isPct(l)){const pv=Math.abs(v)<=1.5?v*100:v;return`${pv.toFixed(1)}%`;}
+  if(isMulti(l))return`${v.toFixed(2)}x`;
+  if(isPay(l))return Math.abs(v)>1000?'—':`${Math.round(v)} yrs`;
+  if(Math.abs(v)>=1e6)return(v/1e6).toFixed(2)+'M';
+  if(Math.abs(v)>=1e3)return Math.round(v).toLocaleString();
+  return v.toLocaleString();
+}
+function rn(v){if(typeof v==='number')return v;if(typeof v==='string'){const n=parseFloat(v.replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}return null;}
+function evSt(y1r,tgt){
+  if(!tgt||tgt==='—'||tgt==='Budget'||tgt==='Same')return'none';
+  const t=String(tgt).trim(),n=rn(y1r);if(n===null)return'none';
+  const nr=v=>Math.abs(v)<=1.5?v*100:v;
+  const gm=t.match(/^>\s*([\d.]+)/),lm=t.match(/^<\s*([\d.]+)/),pm=t.match(/([\d.]+)\s*\+/);
+  if(gm){const th=parseFloat(gm[1]),c=nr(n);return c>=th?'good':c>=th*.8?'warn':'bad';}
+  if(lm){const th=parseFloat(lm[1]),c=nr(n);return c<=th?'good':c<=th*1.2?'warn':'bad';}
+  if(pm){const th=parseFloat(pm[1]),c=nr(n);return c>=th?'good':c>=th*.85?'warn':'bad';}
+  return'none';
+}
+function mkBars(v1,v2,v3,lbls){
+  const rs=[v1,v2,v3].map(rn),nums=rs.filter(x=>x!==null&&!isNaN(x));
+  if(nums.length<2)return'';
+  const mx=Math.max(...nums.map(Math.abs))||1;
+  let b='',l='';
+  rs.forEach((r,i)=>{
+    const h=r!==null?Math.max(3,Math.round((Math.abs(r)/mx)*24)):0;
+    b+=`<div class="kc-b${r!==null&&r<0?' nb':''}" style="height:${h}px"></div>`;
+    l+=`<span>${lbls[i]||''}</span>`;
+  });
+  return`<div class="kc-tr">${b}</div><div class="kc-bl">${l}</div>`;
+}
+
+// ─── RENDER ───────────────────────────────────────────────
+function render(data){
+  const rows=data.rows,hdrs=(rows[0]||[]).map(h=>h?String(h).trim():'');
+  const kC=0,tC=hdrs.length-1,pC=[];
+  for(let i=1;i<tC;i++)pC.push(i);
+  const secs=[],icons=['🏗','📈','💹','📊','📉','⚙','🔢'];
+  const accs=['ct','cb','ca'];
+  const gl={capex:'🏗',equity:'💰',debt:'🏦',revenue:'📈',opex:'⚙',ebitda:'💹',noi:'🏢',profit:'📊',irr:'🎯',npv:'📉',moic:'✖',payback:'⏱'};
+  let cur=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i],hl=r&&r[kC]!==null&&r[kC]!==undefined&&String(r[kC]).trim()!=='';
+    const ha=r&&r.some(c=>c!==null&&c!==undefined&&String(c).trim()!=='');
+    if(!ha||!hl){if(cur.length){secs.push(cur);cur=[];}}else cur.push(r);
+  }
+  if(cur.length)secs.push(cur);
+
+  document.getElementById('hsub').textContent=`${data.sheet} · Singapore Capital Project`;
+  document.getElementById('ts').textContent=data.ts?`Last updated: ${data.ts}`:'';
+
+  // sync path banner
+  const pd=document.getElementById('path-display');
+  const pi=document.getElementById('path-input');
+  if(data.filePath){pd.textContent=data.filePath;pi.value=data.filePath;}
+
+  const pl=pC.map(i=>hdrs[i]||`Col${i}`);
+  let h=`<div class="col-legend">${pl.map((l,i)=>`<span class="${i===0?'cy1':''}">${l}</span>`).join('')}<span class="ctgt">${hdrs[tC]||'Target'}</span></div>`;
+
+  secs.forEach((sr,si)=>{
+    const ttl=String(sr[0][kC]||'').trim().replace(/\s*\([^)]*\)/g,'').split(' ').slice(0,4).join(' ');
+    h+=`<div class="section"><div class="sec-head"><span class="sec-num">${icons[si]||'◆'}</span><span class="sec-title">${ttl}</span><div class="sec-line"></div></div>`;
+    if(si===0){
+      h+=`<div class="hero-grid">`;
+      sr.forEach((r,ri)=>{
+        const lbl=String(r[kC]||'').trim();
+        let g='📊';for(const[k,v]of Object.entries(gl)){if(lbl.toLowerCase().includes(k)){g=v;break;}}
+        h+=`<div class="hero-card ${accs[ri%accs.length]}"><div class="hc-g">${g}</div><div class="hc-l">${lbl}</div><div class="hc-v">${fv(r[pC[0]],lbl)}</div><div class="hc-p">${hdrs[pC[0]]||'Y1 Value'}</div></div>`;
+      });
+      h+=`</div>`;
+    } else {
+      h+=`<div class="kpi-grid">`;
+      sr.forEach(r=>{
+        const lbl=String(r[kC]||'').trim(),y1=r[pC[0]],y1r=rn(y1),tgt=r[tC];
+        const ts=tgt!==null&&tgt!==undefined?String(tgt).trim():'—',st=evSt(y1r,ts),neg=y1r!==null&&y1r<0;
+        let ph='';
+        if(pC.length>1){ph='<div class="kc-ps">';pC.slice(1).forEach(ci=>{ph+=`<div class="kc-p"><div class="kc-pl">${hdrs[ci]||''}</div><div class="kc-pv">${fv(r[ci],lbl)}</div></div>`;});ph+='</div>';}
+        const th=pC.length>=3?mkBars(r[pC[0]],r[pC[1]],r[pC[2]],pC.map(i=>hdrs[i])):'';
+        const chip=st==='good'?`<span class="chip cg">✓ On Target</span>`:st==='bad'?`<span class="chip cr">✗ Below</span>`:st==='warn'?`<span class="chip cw">~ Near</span>`:'';
+        const sc=st==='good'?'sg':st==='bad'?'sb':st==='warn'?'sw':'';
+        h+=`<div class="kpi-card ${sc}"><div class="kc-l">${lbl}</div><div class="kc-y${neg?' neg':''}">${fv(y1,lbl)}</div>${ph}${th}<div class="kc-ft"><div><div class="kc-tl">${hdrs[tC]||'Target'}</div><div class="kc-tv">${ts}</div></div>${chip}</div></div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  });
+
+  h+=`<div class="section"><div class="sec-head"><span class="sec-num">✦</span><span class="sec-title">Full Data Summary</span><div class="sec-line"></div></div><table class="full-table"><thead><tr><th>KPI</th>${pC.map(ci=>`<th>${hdrs[ci]||''}</th>`).join('')}<th style="color:var(--amber)">${hdrs[tC]||'Target'}</th></tr></thead><tbody>`;
+  secs.forEach(sr=>{
+    const g=String(sr[0][kC]||'').trim().replace(/\s*\([^)]*\)/g,'').split(' ').slice(0,4).join(' ');
+    h+=`<tr class="gr"><td colspan="${pC.length+2}">— ${g} —</td></tr>`;
+    sr.forEach(r=>{
+      const lbl=String(r[kC]||'').trim();
+      h+=`<tr><td>${lbl}</td>`;
+      pC.forEach(ci=>{const v=r[ci],rv=rn(v);h+=`<td class="${rv!==null&&rv<0?'neg':''}">${fv(v,lbl)}</td>`;});
+      const t=r[tC]!==null&&r[tC]!==undefined?String(r[tC]).trim():'—';
+      h+=`<td class="tgt">${t}</td></tr>`;
+    });
+  });
+  h+=`</tbody></table></div>`;
+  document.getElementById('main').innerHTML=h;
+}
+
+// ─── PATH BANNER LOGIC ────────────────────────────────────
+const pathDisplay = document.getElementById('path-display');
+const pathInput   = document.getElementById('path-input');
+const editBtn     = document.getElementById('edit-path-btn');
+const copyBtn     = document.getElementById('copy-path-btn');
+let editingPath   = false;
+
+editBtn.addEventListener('click',()=>{
+  editingPath=!editingPath;
+  if(editingPath){
+    pathInput.value=pathDisplay.textContent;
+    pathDisplay.style.display='none';
+    pathInput.style.display='block';
+    pathInput.focus();pathInput.select();
+    editBtn.textContent='✓ Save';
+  } else {
+    const val=pathInput.value.trim()||pathDisplay.textContent;
+    pathDisplay.textContent=val;
+    pathDisplay.style.display='';
+    pathInput.style.display='none';
+    editBtn.textContent='✎ Edit';
+    CURRENT.filePath=val;
+    showToast('Path saved — it will be baked into the downloaded HTML');
+  }
+});
+pathInput.addEventListener('keydown',e=>{ if(e.key==='Enter') editBtn.click(); if(e.key==='Escape'){editingPath=true;editBtn.click();} });
+copyBtn.addEventListener('click',()=>{
+  const txt=pathDisplay.style.display==='none'?pathInput.value:pathDisplay.textContent;
+  navigator.clipboard.writeText(txt).then(()=>showToast('Path copied to clipboard'));
+});
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>{t.style.display='none';},2800);
+}
+
+// ─── DOWNLOAD UPDATED HTML ────────────────────────────────
+document.getElementById('dl-btn').addEventListener('click',()=>{
+  // Capture live path from banner
+  CURRENT.filePath = pathDisplay.style.display==='none'
+    ? pathInput.value.trim()
+    : pathDisplay.textContent.trim();
+
+  const dataStr = JSON.stringify(CURRENT);
+  const src = document.documentElement.outerHTML;
+  const updated = src.replace(
+    /const DEFAULT = \{[\s\S]*?\};\s*\/\/ ─── STATE/,
+    `const DEFAULT = ${dataStr};\n\n// ─── STATE`
+  );
+  const blob = new Blob([updated],{type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const base=(CURRENT.filename||'dashboard').replace(/\.[^.]+$/,'');
+  a.download=`${base}_dashboard_${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Downloaded — replace the file at your OneDrive path');
+});
+
+// ─── FILE UPLOAD ──────────────────────────────────────────
+const mbg=document.getElementById('mbg'),dz=document.getElementById('dz'),fi=document.getElementById('fi'),mst=document.getElementById('mst');
+document.getElementById('open-btn').addEventListener('click',()=>{mbg.classList.add('open');mst.textContent='';mst.className='';});
+document.getElementById('close-btn').addEventListener('click',()=>{mbg.classList.remove('open');fi.value='';});
+mbg.addEventListener('click',e=>{if(e.target===mbg){mbg.classList.remove('open');fi.value='';}});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)load(f);});
+fi.addEventListener('change',e=>{if(e.target.files[0])load(e.target.files[0]);});
+
+function load(file){
+  mst.textContent='Reading…';mst.className='';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const sn=wb.SheetNames[0],ws=wb.Sheets[sn];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+      const ts=new Date().toLocaleString('en-SG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      // preserve existing path
+      const fp=CURRENT.filePath;
+      CURRENT={sheet:sn,filename:file.name,ts,rows,filePath:fp};
+      render(CURRENT);
+      document.getElementById('dl-btn').disabled=false;
+      mst.textContent=`✓ Updated from "${sn}" — now Download Updated HTML`;
+      mst.className='ok';
+    }catch(err){mst.textContent=`⚠ ${err.message}`;mst.className='err';}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+render(DEFAULT);
+</script>
+
+
+
+<span id="PING_IFRAME_FORM_DETECTION" style="display: none;"></span></body></html>
